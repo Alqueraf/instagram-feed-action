@@ -1,0 +1,17 @@
+{
+  "name": "instagram-feed-action",
+  "version": "1.0.0",
+  "description": "Allows you to show your latest instagram posts on your github profile or project readme",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Alex Queudot",
+  "license": "ISC",
+  "dependencies": {
+    "@actions/core": "^1.2.6",
+    "@actions/github": "^4.0.0",
+    "puppeteer": "^5.5.0"
+  }
+}
