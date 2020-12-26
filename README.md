@@ -52,6 +52,7 @@ This workflow has additional options that you can use to customize it for your u
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for getting started with the contribution. Make sure that you follow [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) while contributing and engaging in the discussions. **When contributing, please first discuss the change you wish to make via an issue on this repository before making the actual change**. -->
 
 #### TODO
+- [ ] Add example screenshot
 - [ ] Create Tests
 - [ ] Add View All link to Instagram Account
 

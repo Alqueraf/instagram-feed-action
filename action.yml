@@ -42,7 +42,7 @@ inputs:
 
 runs:
   using: node12
-  main: dist/instagram-feed-action.js
+  main: dist/index.js
 branding:
   icon: 'activity'
   color: 'purple'
