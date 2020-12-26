@@ -13,5 +13,6 @@
     "@actions/core": "^1.2.6",
     "@actions/github": "^4.0.0",
     "puppeteer": "^5.5.0"
-  }
+  },
+  "config": { "puppeteer_download_path": "./node_modules/puppeteer/.local-chromium" }
 }
