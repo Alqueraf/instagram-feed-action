@@ -9800,15 +9800,8 @@ const queryOne = async (element, selector) => {
     return exeCtx._adoptBackendNodeId(res[0].backendDOMNodeId);
 };
 const waitFor = async (domWorld, selector, options) => {
-    const binding = {
-        name: 'ariaQuerySelector',
-        pptrFunction: async (selector) => {
-            const document = await domWorld._document();
-            const element = await queryOne(document, selector);
-            return element;
-        },
-    };
-    return domWorld.waitForSelectorInPage((_, selector) => globalThis.ariaQuerySelector(selector), selector, options, binding);
+    await addHandlerToWorld(domWorld);
+    return domWorld.waitForSelectorInPage((_, selector) => globalThis.ariaQuerySelector(selector), selector, options);
 };
 const queryAll = async (element, selector) => {
     const exeCtx = element.executionContext();
@@ -9822,6 +9815,13 @@ const queryAllArray = async (element, selector) => {
     const jsHandle = exeCtx.evaluateHandle((...elements) => elements, ...elementHandles);
     return jsHandle;
 };
+async function addHandlerToWorld(domWorld) {
+    await domWorld.addBinding('ariaQuerySelector', async (selector) => {
+        const document = await domWorld._document();
+        const element = await queryOne(document, selector);
+        return element;
+    });
+}
 /**
  * @internal
  */
@@ -11188,7 +11188,7 @@ function convertToDisjointRanges(nestedRanges) {
 /***/ }),
 
 /***/ 1269:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
 
@@ -11207,6 +11207,25 @@ function convertToDisjointRanges(nestedRanges) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WaitTask = exports.DOMWorld = void 0;
 const assert_js_1 = __webpack_require__(1608);
@@ -11225,13 +11244,10 @@ class DOMWorld {
         this._contextResolveCallback = null;
         this._detached = false;
         /**
-         * @internal
+         * internal
          */
         this._waitTasks = new Set();
-        /**
-         * @internal
-         * Contains mapping from functions that should be bound to Puppeteer functions.
-         */
+        // Contains mapping from functions that should be bound to Puppeteer functions.
         this._boundFunctions = new Map();
         // Set of bindings that have been registered in the current context.
         this._ctxBindings = new Set();
@@ -11251,6 +11267,10 @@ class DOMWorld {
         if (context) {
             this._contextResolveCallback.call(null, context);
             this._contextResolveCallback = null;
+            this._ctxBindings.clear();
+            for (const name of this._boundFunctions.keys()) {
+                await this.addBindingToContext(name);
+            }
             for (const waitTask of this._waitTasks)
                 waitTask.rerun();
         }
@@ -11367,7 +11387,7 @@ class DOMWorld {
             if (!environment_js_1.isNode) {
                 throw new Error('Cannot pass a filepath to addScriptTag in the browser environment.');
             }
-            const fs = await helper_js_1.helper.importFSModule();
+            const fs = await Promise.resolve().then(() => __importStar(__webpack_require__(5747)));
             let contents = await fs.promises.readFile(path, 'utf8');
             contents += '//# sourceURL=' + path.replace(/\n/g, '');
             const context = await this.executionContext();
@@ -11428,7 +11448,7 @@ class DOMWorld {
             if (!environment_js_1.isNode) {
                 throw new Error('Cannot pass a filepath to addStyleTag in the browser environment.');
             }
-            const fs = await helper_js_1.helper.importFSModule();
+            const fs = await Promise.resolve().then(() => __importStar(__webpack_require__(5747)));
             let contents = await fs.promises.readFile(path, 'utf8');
             contents += '/*# sourceURL=' + path.replace(/\n/g, '') + '*/';
             const context = await this.executionContext();
@@ -11507,19 +11527,19 @@ class DOMWorld {
     /**
      * @internal
      */
-    async addBindingToContext(context, name) {
+    async addBindingToContext(name) {
         // Previous operation added the binding so we are done.
-        if (this._ctxBindings.has(DOMWorld.bindingIdentifier(name, context._contextId))) {
+        if (this._ctxBindings.has(name))
             return;
-        }
         // Wait for other operation to finish
         if (this._settingUpBinding) {
             await this._settingUpBinding;
-            return this.addBindingToContext(context, name);
+            return this.addBindingToContext(name);
         }
         const bind = async (name) => {
             const expression = helper_js_1.helper.pageBindingInitString('internal', name);
             try {
+                const context = await this.executionContext();
                 await context._client.send('Runtime.addBinding', {
                     name,
                     executionContextId: context._contextId,
@@ -11533,24 +11553,29 @@ class DOMWorld {
                 const ctxDestroyed = error.message.includes('Execution context was destroyed');
                 const ctxNotFound = error.message.includes('Cannot find context with specified id');
                 if (ctxDestroyed || ctxNotFound) {
-                    return;
+                    // Retry adding the binding in the next context
+                    await bind(name);
                 }
                 else {
                     helper_js_1.debugError(error);
                     return;
                 }
             }
-            this._ctxBindings.add(DOMWorld.bindingIdentifier(name, context._contextId));
+            this._ctxBindings.add(name);
         };
         this._settingUpBinding = bind(name);
         await this._settingUpBinding;
         this._settingUpBinding = null;
     }
+    /**
+     * @internal
+     */
+    async addBinding(name, puppeteerFunction) {
+        this._boundFunctions.set(name, puppeteerFunction);
+        await this.addBindingToContext(name);
+    }
     async _onBindingCalled(event) {
         let payload;
-        if (!this._hasContext())
-            return;
-        const context = await this.executionContext();
         try {
             payload = JSON.parse(event.payload);
         }
@@ -11560,9 +11585,11 @@ class DOMWorld {
             return;
         }
         const { type, name, seq, args } = payload;
-        if (type !== 'internal' ||
-            !this._ctxBindings.has(DOMWorld.bindingIdentifier(name, context._contextId)))
+        if (type !== 'internal' || !this._ctxBindings.has(name))
             return;
+        if (!this._hasContext())
+            return;
+        const context = await this.executionContext();
         if (context._contextId !== event.executionContextId)
             return;
         try {
@@ -11587,7 +11614,7 @@ class DOMWorld {
     /**
      * @internal
      */
-    async waitForSelectorInPage(queryOne, selector, options, binding) {
+    async waitForSelectorInPage(queryOne, selector, options) {
         const { visible: waitForVisible = false, hidden: waitForHidden = false, timeout = this._timeoutSettings.timeout(), } = options;
         const polling = waitForVisible || waitForHidden ? 'raf' : 'mutation';
         const title = `selector \`${selector}\`${waitForHidden ? ' to be hidden' : ''}`;
@@ -11597,16 +11624,7 @@ class DOMWorld {
                 : document.querySelector(selector);
             return checkWaitForOptions(node, waitForVisible, waitForHidden);
         }
-        const waitTaskOptions = {
-            domWorld: this,
-            predicateBody: helper_js_1.helper.makePredicateString(predicate, queryOne),
-            title,
-            polling,
-            timeout,
-            args: [selector, waitForVisible, waitForHidden],
-            binding,
-        };
-        const waitTask = new WaitTask(waitTaskOptions);
+        const waitTask = new WaitTask(this, helper_js_1.helper.makePredicateString(predicate, queryOne), title, polling, timeout, selector, waitForVisible, waitForHidden);
         const jsHandle = await waitTask.promise;
         const elementHandle = jsHandle.asElement();
         if (!elementHandle) {
@@ -11623,15 +11641,7 @@ class DOMWorld {
             const node = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
             return checkWaitForOptions(node, waitForVisible, waitForHidden);
         }
-        const waitTaskOptions = {
-            domWorld: this,
-            predicateBody: helper_js_1.helper.makePredicateString(predicate),
-            title,
-            polling,
-            timeout,
-            args: [xpath, waitForVisible, waitForHidden],
-        };
-        const waitTask = new WaitTask(waitTaskOptions);
+        const waitTask = new WaitTask(this, helper_js_1.helper.makePredicateString(predicate), title, polling, timeout, xpath, waitForVisible, waitForHidden);
         const jsHandle = await waitTask.promise;
         const elementHandle = jsHandle.asElement();
         if (!elementHandle) {
@@ -11642,61 +11652,47 @@ class DOMWorld {
     }
     waitForFunction(pageFunction, options = {}, ...args) {
         const { polling = 'raf', timeout = this._timeoutSettings.timeout(), } = options;
-        const waitTaskOptions = {
-            domWorld: this,
-            predicateBody: pageFunction,
-            title: 'function',
-            polling,
-            timeout,
-            args,
-        };
-        const waitTask = new WaitTask(waitTaskOptions);
-        return waitTask.promise;
+        return new WaitTask(this, pageFunction, 'function', polling, timeout, ...args).promise;
     }
     async title() {
         return this.evaluate(() => document.title);
     }
 }
 exports.DOMWorld = DOMWorld;
-DOMWorld.bindingIdentifier = (name, contextId) => `${name}_${contextId}`;
 /**
  * @internal
  */
 class WaitTask {
-    constructor(options) {
+    constructor(domWorld, predicateBody, title, polling, timeout, ...args) {
         this._runCount = 0;
         this._terminated = false;
-        if (helper_js_1.helper.isString(options.polling))
-            assert_js_1.assert(options.polling === 'raf' || options.polling === 'mutation', 'Unknown polling option: ' + options.polling);
-        else if (helper_js_1.helper.isNumber(options.polling))
-            assert_js_1.assert(options.polling > 0, 'Cannot poll with non-positive interval: ' + options.polling);
+        if (helper_js_1.helper.isString(polling))
+            assert_js_1.assert(polling === 'raf' || polling === 'mutation', 'Unknown polling option: ' + polling);
+        else if (helper_js_1.helper.isNumber(polling))
+            assert_js_1.assert(polling > 0, 'Cannot poll with non-positive interval: ' + polling);
         else
-            throw new Error('Unknown polling options: ' + options.polling);
+            throw new Error('Unknown polling options: ' + polling);
         function getPredicateBody(predicateBody) {
             if (helper_js_1.helper.isString(predicateBody))
                 return `return (${predicateBody});`;
             return `return (${predicateBody})(...args);`;
         }
-        this._domWorld = options.domWorld;
-        this._polling = options.polling;
-        this._timeout = options.timeout;
-        this._predicateBody = getPredicateBody(options.predicateBody);
-        this._args = options.args;
-        this._binding = options.binding;
+        this._domWorld = domWorld;
+        this._polling = polling;
+        this._timeout = timeout;
+        this._predicateBody = getPredicateBody(predicateBody);
+        this._args = args;
         this._runCount = 0;
-        this._domWorld._waitTasks.add(this);
-        if (this._binding) {
-            this._domWorld._boundFunctions.set(this._binding.name, this._binding.pptrFunction);
-        }
+        domWorld._waitTasks.add(this);
         this.promise = new Promise((resolve, reject) => {
             this._resolve = resolve;
             this._reject = reject;
         });
         // Since page navigation requires us to re-install the pageScript, we should track
         // timeout on our end.
-        if (options.timeout) {
-            const timeoutError = new Errors_js_1.TimeoutError(`waiting for ${options.title} failed: timeout ${options.timeout}ms exceeded`);
-            this._timeoutTimer = setTimeout(() => this.terminate(timeoutError), options.timeout);
+        if (timeout) {
+            const timeoutError = new Errors_js_1.TimeoutError(`waiting for ${title} failed: timeout ${timeout}ms exceeded`);
+            this._timeoutTimer = setTimeout(() => this.terminate(timeoutError), timeout);
         }
         this.rerun();
     }
@@ -11707,18 +11703,11 @@ class WaitTask {
     }
     async rerun() {
         const runCount = ++this._runCount;
+        /** @type {?JSHandle} */
         let success = null;
         let error = null;
-        const context = await this._domWorld.executionContext();
-        if (this._terminated || runCount !== this._runCount)
-            return;
-        if (this._binding) {
-            await this._domWorld.addBindingToContext(context, this._binding.name);
-        }
-        if (this._terminated || runCount !== this._runCount)
-            return;
         try {
-            success = await context.evaluateHandle(waitForPredicatePageFunction, this._predicateBody, this._polling, this._timeout, ...this._args);
+            success = await (await this._domWorld.executionContext()).evaluateHandle(waitForPredicatePageFunction, this._predicateBody, this._polling, this._timeout, ...this._args);
         }
         catch (error_) {
             error = error_;
@@ -11736,13 +11725,10 @@ class WaitTask {
             await success.dispose();
             return;
         }
+        // When frame is detached the task should have been terminated by the DOMWorld.
+        // This can fail if we were adding this task while the frame was detached,
+        // so we terminate here instead.
         if (error) {
-            if (error.message.includes('TypeError: binding is not a function')) {
-                return this.rerun();
-            }
-            // When frame is detached the task should have been terminated by the DOMWorld.
-            // This can fail if we were adding this task while the frame was detached,
-            // so we terminate here instead.
             if (error.message.includes('Execution context is not available in detached frame')) {
                 this.terminate(new Error('waitForFunction failed: frame got detached.'));
                 return;
@@ -15568,6 +15554,13 @@ class Touchscreen {
      * @param y - Vertical position of the tap.
      */
     async tap(x, y) {
+        // Touches appear to be lost during the first frame after navigation.
+        // This waits a frame before sending the tap.
+        // @see https://crbug.com/613219
+        await this._client.send('Runtime.evaluate', {
+            expression: 'new Promise(x => requestAnimationFrame(() => requestAnimationFrame(x)))',
+            awaitPromise: true,
+        });
         const touchPoints = [{ x: Math.round(x), y: Math.round(y) }];
         await this._client.send('Input.dispatchTouchEvent', {
             type: 'touchStart',
@@ -16036,7 +16029,8 @@ class ElementHandle extends JSHandle {
         // This import is only needed for `uploadFile`, so keep it scoped here to avoid paying
         // the cost unnecessarily.
         const path = await Promise.resolve().then(() => __importStar(__webpack_require__(5622)));
-        const fs = await helper_js_1.helper.importFSModule();
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const fs = await Promise.resolve().then(() => __importStar(__webpack_require__(5747)));
         // Locate all files and confirm that they exist.
         const files = await Promise.all(filePaths.map(async (filePath) => {
             const resolvedPath = path.resolve(filePath);
@@ -16813,7 +16807,7 @@ exports.paperFormats = {
 /***/ }),
 
 /***/ 906:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
 
@@ -16832,6 +16826,25 @@ exports.paperFormats = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Page = void 0;
 const EventEmitter_js_1 = __webpack_require__(5602);
@@ -17941,7 +17954,7 @@ class Page extends EventEmitter_js_1.EventEmitter {
         if (!environment_js_1.isNode && options.path) {
             throw new Error('Screenshots can only be written to a file path in a Node environment.');
         }
-        const fs = await helper_js_1.helper.importFSModule();
+        const fs = await Promise.resolve().then(() => __importStar(__webpack_require__(5747)));
         if (options.path)
             await fs.promises.writeFile(options.path, buffer);
         return buffer;
@@ -19739,7 +19752,7 @@ async function readProtocolStream(client, handle, path) {
     if (!environment_js_1.isNode && path) {
         throw new Error('Cannot write to a path outside of Node.js environment.');
     }
-    const fs = environment_js_1.isNode ? await importFSModule() : null;
+    const fs = environment_js_1.isNode ? await Promise.resolve().then(() => __importStar(__webpack_require__(5747))) : null;
     let eof = false;
     let fileHandle;
     if (path && fs) {
@@ -19766,28 +19779,6 @@ async function readProtocolStream(client, handle, path) {
         return resultBuffer;
     }
 }
-/**
- * Loads the Node fs promises API. Needed because on Node 10.17 and below,
- * fs.promises is experimental, and therefore not marked as enumerable. That
- * means when TypeScript compiles an `import('fs')`, its helper doesn't spot the
- * promises declaration and therefore on Node <10.17 you get an error as
- * fs.promises is undefined in compiled TypeScript land.
- *
- * See https://github.com/puppeteer/puppeteer/issues/6548 for more details.
- *
- * Once Node 10 is no longer supported (April 2021) we can remove this and use
- * `(await import('fs')).promises`.
- */
-async function importFSModule() {
-    if (!environment_js_1.isNode) {
-        throw new Error('Cannot load the fs module API outside of Node.');
-    }
-    const fs = await Promise.resolve().then(() => __importStar(__webpack_require__(5747)));
-    if (fs.promises) {
-        return fs;
-    }
-    return fs.default;
-}
 exports.helper = {
     evaluationString,
     pageBindingInitString,
@@ -19800,7 +19791,6 @@ exports.helper = {
     waitForEvent,
     isString,
     isNumber,
-    importFSModule,
     addEventListener,
     removeEventListeners,
     valueFromRemoteObject,
@@ -19833,7 +19823,9 @@ exports.helper = {
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.isNode = void 0;
-exports.isNode = !!(typeof process !== 'undefined' && process.version);
+exports.isNode = !!(typeof process !== 'undefined' &&
+    process.versions &&
+    process.versions.node);
 
 
 /***/ }),
@@ -21484,7 +21476,7 @@ exports.PuppeteerNode = PuppeteerNode;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PUPPETEER_REVISIONS = void 0;
 exports.PUPPETEER_REVISIONS = {
-    chromium: '818858',
+    chromium: '809590',
     firefox: 'latest',
 };
 
