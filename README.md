@@ -33,20 +33,22 @@ jobs:
 - Replace the above instagram account with your own account.
 - Commit and wait for it to run automatically or you can also trigger it manually from the Actions tab to see the result instantly.
 
+[See the result!](https://github.com/Alqueraf/Alqueraf#%EF%B8%8F-what-ive-been-up-to)
+
 ### Options
 This workflow has additional options that you can use to customize it for your use case. The following are the list of options available:
 
 | Option | Default Value | Description | Required |
 |--------|--------|--------|--------|
-| `account` | `""` | The name of the instagram account to use, eg: `https://example1.com,https://example2.com` | Yes  |
+| `account` | `""` | The name of the instagram account to use, eg: `alqueraf` | Yes  |
 | `max_post_count` | `6` | Maximum number of posts you want to show on your readme | No  |
 | `image_size` | `250` | Image dimension in pixels for each post | No  |
 | `image_margin` | `10` | Margin between post images | No  |
 | `readme_path` | `./README.md` | Path of the readme file you want to update | No |
 | `gh_token` | Your GitHub token with repo scope | Use this to configure the token of the user that commits the workflow result to GitHub | No |
-| `commit_message` | `Updated with the latest blog posts` | Allows you to customize the commit message | No |
-| `committer_username` | `blog-post-bot` | Allows you to customize the committer username | No |
-| `committer_email` | `blog-post-bot@example.com` | Allows you to customize the committer email | No |
+| `commit_message` | `Updated with the latest instagram posts` | Allows you to customize the commit message | No |
+| `committer_username` | `instagram-feed-bot` | Allows you to customize the committer username | No |
+| `committer_email` | `instagram-feed-bot@example.com` | Allows you to customize the committer email | No |
 <!-- 
 ### Contributing
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for getting started with the contribution. Make sure that you follow [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) while contributing and engaging in the discussions. **When contributing, please first discuss the change you wish to make via an issue on this repository before making the actual change**. -->
