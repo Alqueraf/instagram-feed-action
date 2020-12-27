@@ -137,7 +137,6 @@ const buildInstagramFeedMarkdown = (instagramPostsArray) => {
         let rowElement = htmlPostElement
             .replace(imagePlaceholder, element["image"])
             .replace(messagePlaceholder, element["message"].trim().replace(/(\r\n|\n|\r)/gm, " "));
-        console.log(index);
         // Set Margins
         rowElement = rowElement
             .replace(marginRightPlaceholder, imageMarginPx)
@@ -215,6 +214,7 @@ const commitReadme = async () => {
     await exec('git', ['config', '--global', 'user.name', committerUsername]);
     await exec('git', ['add', README_FILE_PATH]);
     await exec('git', ['commit', '-m', commitMessage]);
+    await exec('git', ['pull', '--ff-only']);
     await exec('git', ['push']);
     core.info('Readme updated successfully in the upstream repository');
     // Making job fail if one of the source fails
@@ -31912,6 +31912,7 @@ class PuppeteerService {
      */
     async getLatestInstagramPostsFromAccount(account, maxPostCount) {
         // Init Browser
+        // https://github.com/puppeteer/puppeteer/issues/6560
         const browserFetcher = puppeteer.createBrowserFetcher();
         const revisionInfo = await browserFetcher.download('809590.');    
         const browser = await puppeteer.launch({
