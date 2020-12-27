@@ -8,6 +8,7 @@ class PuppeteerService {
      */
     async getLatestInstagramPostsFromAccount(account, maxPostCount) {
         // Init Browser
+        // https://github.com/puppeteer/puppeteer/issues/6560
         const browserFetcher = puppeteer.createBrowserFetcher();
         const revisionInfo = await browserFetcher.download('809590.');    
         const browser = await puppeteer.launch({
