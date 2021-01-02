@@ -1,8 +1,8 @@
 # Instagram feed action  
-<!-- [![Build and test](https://github.com/Alqueraf/instagram-feed-action/workflows/Build%20and%20test/badge.svg?branch=master)](https://github.com/Alqueraf/instagram-feed-action/actions?query=workflow%3A%22Build+and+test%22) -->
+Add a list of your latest Instagram pictures to your README page with automated content refresh!
 
-<!-- ![preview](https://user-images.githubusercontent.com/8397274/88047382-29b8b280-cb6f-11ea-9efb-2af2b10f3e0c.png) -->
-
+![preview](images/example.png)
+[Check it on the Readme Profile!](https://github.com/Alqueraf/Alqueraf#%EF%B8%8F-what-ive-been-up-to)
 
 ### How to use
 - Go to your repository
@@ -33,8 +33,6 @@ jobs:
 - Replace the above instagram account with your own account.
 - Commit and wait for it to run automatically or you can also trigger it manually from the Actions tab to see the result instantly.
 
-[See the result!](https://github.com/Alqueraf/Alqueraf#%EF%B8%8F-what-ive-been-up-to)
-
 ### Options
 This workflow has additional options that you can use to customize it for your use case. The following are the list of options available:
 
@@ -52,11 +50,6 @@ This workflow has additional options that you can use to customize it for your u
 <!-- 
 ### Contributing
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for getting started with the contribution. Make sure that you follow [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) while contributing and engaging in the discussions. **When contributing, please first discuss the change you wish to make via an issue on this repository before making the actual change**. -->
-
-#### TODO
-- [ ] Add example screenshot
-- [ ] Create Tests
-- [ ] Add View All link to Instagram Account
 
 ### Bugs
 If you are experiencing any bugs, don’t forget to open a [new issue](https://github.com/alqueraf/instagram-feed-action/issues/new).
