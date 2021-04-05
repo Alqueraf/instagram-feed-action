@@ -61,7 +61,7 @@ if (account.length === 0) {
 // Retrieve Instagram Posts
 // (One single account supported for now)
 promiseArray.push(new Promise((resolve, reject) => {
-  runnerNameArray.push(account);
+    runnerNameArray.push(account);
     const maxPostCount = Number.parseInt(core.getInput('max_post_count'));
     if (maxPostCount <= 0) {
         core.error('Please set a max_post_count value greater than 0');
@@ -97,17 +97,22 @@ Promise.allSettled(promiseArray).then((results) => {
         const readmeData = fs.readFileSync(README_FILE_PATH, 'utf8');
         core.info("Building Instagram Feed Markdown");
         const instagramFeedMarkdown = buildInstagramFeedMarkdown(instagramPostsArray);
-        core.info("Building updated README");
-        const newReadme = buildReadme(readmeData, instagramFeedMarkdown);
-        // If there's change in readme file update it
-        if (newReadme !== readmeData) {
-            core.info('Writing to ' + README_FILE_PATH);
-            fs.writeFileSync(README_FILE_PATH, newReadme);
-            await commitReadme();
-            await puppeteerService.close();
-        } else {
-            core.info('No change detected, skipping');
+        if (instagramPostsArray == null || instagramPostsArray.length == 0) {
+            core.info('No posts detected');
             process.exit(0);
+        } else {
+            core.info("Building updated README");
+            const newReadme = buildReadme(readmeData, instagramFeedMarkdown);
+            // If there's change in readme file update it
+            if (newReadme !== readmeData) {
+                core.info('Writing to ' + README_FILE_PATH);
+                fs.writeFileSync(README_FILE_PATH, newReadme);
+                await commitReadme();
+                await puppeteerService.close();
+            } else {
+                core.info('No change detected, skipping');
+                process.exit(0);
+            }
         }
     } catch (e) {
         core.error(e);
