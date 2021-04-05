@@ -31932,6 +31932,7 @@ class PuppeteerService {
                 '--incognito',
                 '--proxy-server=http=194.67.37.90:3128',
             ],
+            timeout: 0,
         });
         const url = `https://www.picuki.com/profile/${account}`;
         // Go to page
