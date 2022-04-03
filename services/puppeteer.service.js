@@ -49,7 +49,7 @@ class PuppeteerService {
                 images.map((image, index) => {
                     posts.push({
                         "image": image.src,
-                        "message": messages[index].innerHTML
+                        "message": messages[index].innerHTML.trim()
                     });
                 });
                 return posts;

@@ -1,5 +1,11 @@
 // Compile this file using: `ncc build index.js --license licenses.txt`
 const fs = require('fs');
+const https = require('https')
+const http = require('http')
+const { basename } = require('path');
+const { URL } = require('url');
+const DOWNLOAD_TIMEOUT = 10000
+
 const puppeteerService = require('./services/puppeteer.service');
 
 const core = require('@actions/core');
@@ -14,6 +20,9 @@ let jobFailFlag = false; // Job status flag
 // Readme path, default: ./README.md
 const README_FILE_PATH = core.getInput('readme_path');
 const GITHUB_TOKEN = core.getInput('gh_token');
+
+// Images folder
+const IMAGES_DIR = core.getInput('images_directory');
 
 // Reading account from the workflow input
 const account = core.getInput('account').trim();
@@ -48,6 +57,7 @@ Promise.allSettled(promiseArray).then((results) => {
             // Succeeded
             core.info(runnerNameArray[index] + ' runner succeeded. Post count: ' + result.value.length);
             instagramPostsArray.push(...result.value);
+
         } else {
             jobFailFlag = true;
             // Rejected
@@ -57,14 +67,28 @@ Promise.allSettled(promiseArray).then((results) => {
     });
 }).finally(async () => {
     try {
+        // Download images
+        // Done
         core.info("Reading README file");
         const readmeData = fs.readFileSync(README_FILE_PATH, 'utf8');
-        core.info("Building Instagram Feed Markdown");
-        const instagramFeedMarkdown = buildInstagramFeedMarkdown(instagramPostsArray);
         if (instagramPostsArray == null || instagramPostsArray.length == 0) {
             core.info('No posts detected');
             process.exit(0);
         } else {
+            console.log("Creating image directory");
+            fs.mkdir(IMAGES_DIR, { recursive: true }, (err) => {
+                if (err) throw err;
+              });
+            core.info("Downloading images");
+            await Promise.all(instagramPostsArray.map((element, index) => {
+                return downloadFile(element["image"], IMAGES_DIR + "/" + index + '.jpeg');
+            }));
+            core.info("Mapping urls to downloaded images");
+            instagramPostsArray.forEach((element, index) => {
+                element["image"] = IMAGES_DIR + "/" + index + '.jpeg';
+            });
+            core.info("Building Instagram Feed Markdown");
+            const instagramFeedMarkdown = buildInstagramFeedMarkdown(instagramPostsArray);
             core.info("Building updated README");
             const newReadme = buildReadme(readmeData, instagramFeedMarkdown);
             // If there's change in readme file update it
@@ -181,7 +205,8 @@ const commitReadme = async () => {
         ]);
     }
     await exec('git', ['config', '--global', 'user.name', committerUsername]);
-    await exec('git', ['add', README_FILE_PATH]);
+    // await exec('git', ['add', README_FILE_PATH]);
+    await exec('git', ['add', '-A']);
     await exec('git', ['commit', '-m', commitMessage]);
     await exec('git', ['pull', '--ff-only']);
     await exec('git', ['push']);
@@ -189,3 +214,38 @@ const commitReadme = async () => {
     // Making job fail if one of the source fails
     process.exit(jobFailFlag ? 1 : 0);
 };
+
+function downloadFile (url, dest) {
+    const uri = new URL(url)
+    if (!dest) {
+      dest = basename(uri.pathname)
+    }
+    const pkg = url.toLowerCase().startsWith('https:') ? https : http
+  
+    return new Promise((resolve, reject) => {
+      const request = pkg.get(uri.href).on('response', (res) => {
+        if (res.statusCode === 200) {
+          const file = fs.createWriteStream(dest, { flags: 'w' })
+          res
+            .on('end', () => {
+              file.end()
+              // console.log(`${uri.pathname} downloaded to: ${path}`)
+              resolve()
+            })
+            .on('error', (err) => {
+              file.destroy()
+              fs.unlink(dest, () => reject(err))
+            }).pipe(file)
+        } else if (res.statusCode === 302 || res.statusCode === 301) {
+          // Recursively follow redirects, only a 200 will resolve.
+          downloadFile(res.headers.location, dest).then(() => resolve())
+        } else {
+          reject(new Error(`Download request failed, response status: ${res.statusCode} ${res.statusMessage}`))
+        }
+      })
+      request.setTimeout(DOWNLOAD_TIMEOUT, function () {
+        request.destroy()
+        reject(new Error(`Request timeout after ${DOWNLOAD_TIMEOUT / 1000.0}s`))
+      })
+    })
+  }

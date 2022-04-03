@@ -19,6 +19,10 @@ inputs:
     description: 'Margin between post images'
     default: '10'
     required: false
+  images_directory:
+    description: 'Directory where images are stored'
+    default: './images/instagram'
+    required: false
   gh_token:
     description: 'GitHub access token with Repo scope'
     required: false

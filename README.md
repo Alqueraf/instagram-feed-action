@@ -42,6 +42,7 @@ This workflow has additional options that you can use to customize it for your u
 | `max_post_count` | `6` | Maximum number of posts you want to show on your readme | No  |
 | `image_size` | `250` | Image dimension in pixels for each post | No  |
 | `image_margin` | `10` | Margin between post images | No  |
+| `images_directory` | `./images/instagram` | Directory where images are stored | No  |
 | `readme_path` | `./README.md` | Path of the readme file you want to update | No |
 | `gh_token` | Your GitHub token with repo scope | Use this to configure the token of the user that commits the workflow result to GitHub | No |
 | `commit_message` | `Updated with the latest instagram posts` | Allows you to customize the commit message | No |
@@ -61,3 +62,7 @@ If you are experiencing any bugs, don’t forget to open a [new issue](https://g
 
 ### Liked it?
 Hope you liked this project, don't forget to give it a star ⭐
+
+### Local Development
+- To test this project on your own environment, clone the repository and execute any script with `node script.js`.
+- Before commiting your changes run `ncc build instagram-feed-action.js --license licenses.txt` to compile your changes.
