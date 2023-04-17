@@ -1,4 +1,15 @@
-const puppeteer = require('puppeteer');
+// puppeteer-extra is a drop-in replacement for puppeteer,
+// it augments the installed puppeteer with plugin functionality.
+// Any number of plugins can be added through `puppeteer.use()`
+const puppeteer = require('puppeteer-extra');
+
+// Add stealth plugin and use defaults (all tricks to hide puppeteer usage)
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+puppeteer.use(StealthPlugin());
+
+// Add adblocker plugin to block all ads and trackers (saves bandwidth)
+const AdblockerPlugin = require('puppeteer-extra-plugin-adblocker');
+puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
 class PuppeteerService {
     /**
@@ -8,11 +19,7 @@ class PuppeteerService {
      */
     async getLatestInstagramPostsFromAccount(account, maxPostCount) {
         // Init Browser
-        // https://github.com/puppeteer/puppeteer/issues/6560
-        const browserFetcher = puppeteer.createBrowserFetcher();
-        const revisionInfo = await browserFetcher.download('809590.');
         const browser = await puppeteer.launch({
-            executablePath: revisionInfo.executablePath,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -21,28 +28,38 @@ class PuppeteerService {
                 '--ignore-certifcate-errors',
                 '--ignore-certifcate-errors-spki-list',
                 '--incognito',
+                '--window-size=1920,1080',
                 '--proxy-server=http=194.67.37.90:3128',
             ],
             timeout: 0,
             // headless: false,
         });
+
         const url = `https://www.picuki.com/profile/${account}`;
-        // Go to page
-        const page = await browser.newPage();
+
+        const availablePages = await browser.pages();
+        const page = availablePages.length > 0 ? availablePages[0] : await browser.newPage();
         await page.setExtraHTTPHeaders({
             'Accept-Language': 'en-US',
         });
-        await page.goto(url, {
-            waitUntil: `networkidle0`,
-        });
+
+        // Set User Agent to avoid Cloudflare blocking
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20100101 Firefox/5.0')
+
+        await page.goto(url, { waitUntil: "domcontentloaded" });
+        await page.waitForTimeout(4000);
 
         let previousHeight;
 
         try {
             previousHeight = await page.evaluate(`document.body.scrollHeight`);
             await page.evaluate(`window.scrollTo(0, document.body.scrollHeight)`);
-            await page.waitForTimeout(1000);
 
+            // Uncomment this line to screenshot the page
+            // await page.screenshot({ path: 'test.png', fullPage: true })
+
+            await page.waitForSelector(`.post-image`);
+            await page.waitForSelector(`.photo-description`);
             const nodes = await page.evaluate(() => {
                 const images = Array.from(document.querySelectorAll(`.post-image`));
                 const messages = Array.from(document.querySelectorAll(`.photo-description`));
@@ -55,7 +72,6 @@ class PuppeteerService {
                 });
                 return posts;
             });
-
             return nodes.slice(0, maxPostCount);
         } catch (error) {
             console.log('Error', error);

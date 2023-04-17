@@ -6,7 +6,7 @@ const { basename } = require('path');
 const { URL } = require('url');
 const DOWNLOAD_TIMEOUT = 10000
 
-const puppeteerService = require('./services/puppeteer.service');
+const puppeteerService = require('./services/puppeteer.service').default;
 
 const core = require('@actions/core');
 const process = require('process');
@@ -78,7 +78,7 @@ Promise.allSettled(promiseArray).then((results) => {
             console.log("Creating image directory");
             fs.mkdir(IMAGES_DIR, { recursive: true }, (err) => {
                 if (err) throw err;
-              });
+            });
             core.info("Downloading images");
             await Promise.all(instagramPostsArray.map((element, index) => {
                 return downloadFile(element["image"], IMAGES_DIR + "/" + index + '.jpeg');
@@ -215,37 +215,37 @@ const commitReadme = async () => {
     process.exit(jobFailFlag ? 1 : 0);
 };
 
-function downloadFile (url, dest) {
+function downloadFile(url, dest) {
     const uri = new URL(url)
     if (!dest) {
-      dest = basename(uri.pathname)
+        dest = basename(uri.pathname)
     }
     const pkg = url.toLowerCase().startsWith('https:') ? https : http
-  
+
     return new Promise((resolve, reject) => {
-      const request = pkg.get(uri.href).on('response', (res) => {
-        if (res.statusCode === 200) {
-          const file = fs.createWriteStream(dest, { flags: 'w' })
-          res
-            .on('end', () => {
-              file.end()
-              // console.log(`${uri.pathname} downloaded to: ${path}`)
-              resolve()
-            })
-            .on('error', (err) => {
-              file.destroy()
-              fs.unlink(dest, () => reject(err))
-            }).pipe(file)
-        } else if (res.statusCode === 302 || res.statusCode === 301) {
-          // Recursively follow redirects, only a 200 will resolve.
-          downloadFile(res.headers.location, dest).then(() => resolve())
-        } else {
-          reject(new Error(`Download request failed, response status: ${res.statusCode} ${res.statusMessage}`))
-        }
-      })
-      request.setTimeout(DOWNLOAD_TIMEOUT, function () {
-        request.destroy()
-        reject(new Error(`Request timeout after ${DOWNLOAD_TIMEOUT / 1000.0}s`))
-      })
+        const request = pkg.get(uri.href).on('response', (res) => {
+            if (res.statusCode === 200) {
+                const file = fs.createWriteStream(dest, { flags: 'w' })
+                res
+                    .on('end', () => {
+                        file.end()
+                        // console.log(`${uri.pathname} downloaded to: ${path}`)
+                        resolve()
+                    })
+                    .on('error', (err) => {
+                        file.destroy()
+                        fs.unlink(dest, () => reject(err))
+                    }).pipe(file)
+            } else if (res.statusCode === 302 || res.statusCode === 301) {
+                // Recursively follow redirects, only a 200 will resolve.
+                downloadFile(res.headers.location, dest).then(() => resolve())
+            } else {
+                reject(new Error(`Download request failed, response status: ${res.statusCode} ${res.statusMessage}`))
+            }
+        })
+        request.setTimeout(DOWNLOAD_TIMEOUT, function () {
+            request.destroy()
+            reject(new Error(`Request timeout after ${DOWNLOAD_TIMEOUT / 1000.0}s`))
+        })
     })
-  }
+}

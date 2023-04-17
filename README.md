@@ -74,6 +74,6 @@ Hope you liked this project, don't forget to give it a star ⭐
 
 ### Local Development
 
-- To test the puppeteer service, uncomment the line `puppeteerService.getLatestInstagramPostsFromAccount` inside the [PuppeteerService](services/puppeteer.service.js) file and set your instagram account. (Optional) Uncomment the line `headless: false` to view the browser in action.
+- To test the puppeteer service, uncomment the line `puppeteerService.getLatestInstagramPostsFromAccount` inside the [PuppeteerService](services/puppeteer.service.js) file and set your instagram account. (Optional) Uncomment the lines `headless: false` or `page.screenshot` to view the browser results.
 - Use `node services/puppeteer.service.js` to run the script.
 - Before commiting your changes run `ncc build instagram-feed-action.js --license licenses.txt` to compile your changes.
