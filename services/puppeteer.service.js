@@ -10,7 +10,7 @@ class PuppeteerService {
         // Init Browser
         // https://github.com/puppeteer/puppeteer/issues/6560
         const browserFetcher = puppeteer.createBrowserFetcher();
-        const revisionInfo = await browserFetcher.download('809590.');    
+        const revisionInfo = await browserFetcher.download('809590.');
         const browser = await puppeteer.launch({
             executablePath: revisionInfo.executablePath,
             args: [
@@ -24,6 +24,7 @@ class PuppeteerService {
                 '--proxy-server=http=194.67.37.90:3128',
             ],
             timeout: 0,
+            // headless: false,
         });
         const url = `https://www.picuki.com/profile/${account}`;
         // Go to page
@@ -68,5 +69,6 @@ class PuppeteerService {
 }
 
 const puppeteerService = new PuppeteerService();
+// puppeteerService.getLatestInstagramPostsFromAccount('alqueraf', 6).then(console.log);
 
 module.exports = puppeteerService;
