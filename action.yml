@@ -1,6 +1,6 @@
-name: 'Instagram Feed Action'
-author: 'Alex Queudot'
-description: 'Allows you to show your latest instagram posts on your github profile or project readme'
+name: "Instagram Feed Action"
+author: "Alex Queudot"
+description: "Allows you to show your latest instagram posts on your github profile or project readme"
 
 inputs:
   account:
@@ -8,28 +8,28 @@ inputs:
     default: ""
     required: true
   max_post_count:
-    description: 'Maximum number of posts you want to show on your readme'
-    default: '6'
+    description: "Maximum number of posts you want to show on your readme"
+    default: "6"
     required: false
   image_size:
-    description: 'Image dimension in pixels for each post'
-    default: '250'
+    description: "Image dimension in pixels for each post"
+    default: "250"
     required: false
   image_margin:
-    description: 'Margin between post images'
-    default: '10'
+    description: "Margin between post images"
+    default: "10"
     required: false
   images_directory:
-    description: 'Directory where images are stored'
-    default: './images/instagram'
+    description: "Directory where images are stored"
+    default: "./images/instagram"
     required: false
   gh_token:
-    description: 'GitHub access token with Repo scope'
+    description: "GitHub access token with Repo scope"
     required: false
     default: ${{ github.token }}
   readme_path:
-    description: 'Path of the readme file you want to update'
-    default: './README.md'
+    description: "Path of the readme file you want to update"
+    default: "./README.md"
     required: false
   commit_message:
     description: "Commit message used while committing to the repo"
@@ -45,8 +45,8 @@ inputs:
     required: false
 
 runs:
-  using: node12
+  using: node16
   main: dist/index.js
 branding:
-  icon: 'activity'
-  color: 'purple'
+  icon: "activity"
+  color: "purple"
