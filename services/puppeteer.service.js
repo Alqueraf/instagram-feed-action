@@ -7,8 +7,13 @@ class PuppeteerService {
      * @param {number} maxPostCount Quantity of posts to fetch
      */
     async getLatestInstagramPostsFromAccount(account, maxPostCount) {
+        // Download Chromium
+        // https://github.com/puppeteer/puppeteer/issues/6560
+        const browserFetcher = puppeteer.createBrowserFetcher();
+        const revisionInfo = await browserFetcher.download('1108766');
         // Init Browser
         const browser = await puppeteer.launch({
+            executablePath: revisionInfo.executablePath,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
