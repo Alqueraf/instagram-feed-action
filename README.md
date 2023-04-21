@@ -5,7 +5,7 @@ Add a list of your latest Instagram pictures to your README page with automated 
 ![preview](images/example.png)
 [Check it on the Readme Profile!](https://github.com/Alqueraf/Alqueraf#%EF%B8%8F-what-ive-been-up-to)
 
-### How to use
+## How to use
 
 - Go to your repository
 - Add the following section to your **README.md** file, you can give whatever title you want. Just make sure that you use `<!-- INSTAGRAM-FEED:START --><!-- INSTAGRAM-FEED:END -->` in your readme. The workflow will replace this comment with the actual blog post list:
@@ -39,7 +39,7 @@ jobs:
 - Replace the above instagram account with your own account.
 - Commit and wait for it to run automatically or you can also trigger it manually from the Actions tab to see the result instantly.
 
-### Options
+## Options
 
 This workflow has additional options that you can use to customize it for your use case. The following are the list of options available:
 
@@ -55,25 +55,28 @@ This workflow has additional options that you can use to customize it for your u
 | `commit_message` | `Updated with the latest instagram posts` | Allows you to customize the commit message | No |
 | `committer_username` | `instagram-feed-bot` | Allows you to customize the committer username | No |
 | `committer_email` | `instagram-feed-bot@example.com` | Allows you to customize the committer email | No |
-<!-- 
-### Contributing
-Please see [CONTRIBUTING.md](CONTRIBUTING.md) for getting started with the contribution. Make sure that you follow [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) while contributing and engaging in the discussions. **When contributing, please first discuss the change you wish to make via an issue on this repository before making the actual change**. -->
 
-### Bugs
+## Bugs
 
 If you are experiencing any bugs, don’t forget to open a [new issue](https://github.com/alqueraf/instagram-feed-action/issues/new).
 
-<!-- ### Thanks
-- Thanks to all the **2K+✨** users of this workflow
-- Thanks to all the [contributors](https://github.com/gautamkrishnar/blog-post-workflow/graphs/contributors)
-- Thanks to [@codeSTACKr](https://github.com/codeSTACKr) for [this](https://www.youtube.com/watch?v=ECuqb5Tv9qI) amazing video -->
-
-### Liked it?
+## Liked it?
 
 Hope you liked this project, don't forget to give it a star ⭐
 
-### Local Development
+## Local Development
+
+### Prerequisites
+
+- Node.js `lts/hydrogen -> v18.16.0`.
+- Ncc `npm install -g @vercel/ncc` v0.36.1.
+
+### Debugging
 
 - To test the puppeteer service, uncomment the line `puppeteerService.getLatestInstagramPostsFromAccount` inside the [PuppeteerService](services/puppeteer.service.js) file and set your instagram account. (Optional) Uncomment the lines `headless: false` or `page.screenshot` to view the browser results.
 - Use `node services/puppeteer.service.js` to run the script.
-- Before commiting your changes run `ncc build instagram-feed-action.js --license licenses.txt` to compile your changes. Use `NODE_OPTIONS=--openssl-legacy-provider ncc build instagram-feed-action.js --license licenses.txt` if you get a `ERR_OSSL_EVP_UNSUPPORTED` error.
+
+### Deployment
+
+- Before commiting your changes run `ncc build instagram-feed-action.js --license licenses.txt` to compile your changes.
+- Use `NODE_OPTIONS=--openssl-legacy-provider ncc build instagram-feed-action.js --license licenses.txt` if you get a `ERR_OSSL_EVP_UNSUPPORTED` error.
