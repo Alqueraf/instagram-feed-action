@@ -74,6 +74,6 @@ class PuppeteerService {
 }
 
 const puppeteerService = new PuppeteerService();
-puppeteerService.getLatestInstagramPostsFromAccount('alqueraf', 6).then(console.log);
+// puppeteerService.getLatestInstagramPostsFromAccount('alqueraf', 6).then(console.log);
 
 module.exports = puppeteerService;

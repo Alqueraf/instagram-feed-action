@@ -24,6 +24,9 @@ const GITHUB_TOKEN = core.getInput('gh_token');
 // Images folder
 const IMAGES_DIR = core.getInput('images_directory');
 
+// Print node version
+core.info('Node version: ' + process.version);
+
 // Reading account from the workflow input
 const account = core.getInput('account').trim();
 if (account.length === 0) {
