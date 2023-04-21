@@ -68,8 +68,8 @@ Hope you liked this project, don't forget to give it a star ⭐
 
 ### Prerequisites
 
-- Node.js `lts/hydrogen -> v18.16.0`.
-- Ncc `npm install -g @vercel/ncc` v0.36.1.
+- Node.js `v16.20.0`.
+- Ncc @vercel `v0.36.1`.
 
 ### Debugging
 
