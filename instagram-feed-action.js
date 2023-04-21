@@ -6,7 +6,7 @@ const { basename } = require('path');
 const { URL } = require('url');
 const DOWNLOAD_TIMEOUT = 10000
 
-const puppeteerService = require('./services/puppeteer.service').default;
+const puppeteerService = require('./services/puppeteer.service');
 
 const core = require('@actions/core');
 const process = require('process');
